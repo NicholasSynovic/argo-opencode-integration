@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import aiohttp
 import aiohttp.web
 
@@ -28,10 +27,10 @@ async def proxy_request(request):
             ssl=False,
             allow_redirects=False,
         ) as resp:
-
             # Preserve streaming + encoding
             filtered_headers = {
-                k: v for k, v in resp.headers.items()
+                k: v
+                for k, v in resp.headers.items()
                 if k.lower() not in ("content-length")
             }
 
@@ -61,10 +60,7 @@ async def proxy_request(request):
 
 async def on_startup(app):
     timeout = aiohttp.ClientTimeout(total=None)
-    app["session"] = aiohttp.ClientSession(
-        auto_decompress=False,
-        timeout=timeout
-    )
+    app["session"] = aiohttp.ClientSession(auto_decompress=False, timeout=timeout)
 
 
 async def on_cleanup(app):
