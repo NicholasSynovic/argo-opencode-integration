@@ -112,13 +112,13 @@ run_argo() {
     # Step 2: Start local proxy
     echo -e "${YELLOW}Starting local proxy...${NC}"
 
-    python3.12 "${SCRIPT_DIR}/claude-argo-proxy.py" &
+    python3.14 "${SCRIPT_DIR}/main.py" &
     PROXY_PID=$!
 
     sleep 2
 
     if ! kill -0 ${PROXY_PID} 2>/dev/null; then
-        echo -e "${RED}Local proxy failed to start. Is aiohttp installed? (pip install aiohttp)${NC}"
+        echo -e "${RED}Local proxy failed to start. Is aiohttp installed? (try: uv sync)${NC}"
         exit 1
     fi
 
