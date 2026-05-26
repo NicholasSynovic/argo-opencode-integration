@@ -63,6 +63,9 @@ argonne-claude.sh --backend=argo --identity=jdoe
 argonne-claude.sh --backend=asksage --identity=sk-asksage-...
 ```
 
+For Argo, `--identity` sets the SSH username for the target and jump hosts.
+If omitted, it defaults to your current local username.
+
 ## Architecture
 
 Argo flow:
@@ -99,7 +102,6 @@ chmod 600 ~/.asksage/token
 ## Useful overrides
 
 - `CLAUDE_EXECUTABLE` changes the `claude` binary.
-- `ARGO_USER` sets the default Argo identity.
 - `ARGO_AURORA_UAN` and `ARGO_SSH_JUMP` override Aurora jump-host selection.
 - `ASKSAGE_BASE_URL` targets another AskSage tenant.
 - `ASKSAGE_MODEL` and `ASKSAGE_SMALL_FAST_MODEL` pin models and skip discovery.

@@ -4,6 +4,40 @@
 BACKEND=""
 IDENTITY=""
 
+current_user() {
+    id -un
+}
+
+prefix_ssh_user() {
+    local user="$1"
+    local host="$2"
+
+    case "${host}" in
+        *'@'*) printf '%s' "${host}" ;;
+        *) printf '%s@%s' "${user}" "${host}" ;;
+    esac
+}
+
+prefix_jump_chain() {
+    local user="$1"
+    local chain="$2"
+    local result=""
+    local host=""
+    local IFS=,
+
+    for host in ${chain}; do
+        [ -z "${host}" ] && continue
+        host="$(prefix_ssh_user "${user}" "${host}")"
+        if [ -n "${result}" ]; then
+            result="${result},${host}"
+        else
+            result="${host}"
+        fi
+    done
+
+    printf '%s' "${result}"
+}
+
 # Parse args. Only --backend / --identity are consumed; anything else is ignored.
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -54,6 +88,14 @@ run_argo() {
         ARGO_SSH_JUMP="${ARGO_AURORA_UAN},logins.cels.anl.gov"
     fi
 
+    # Identity precedence: --identity > current user.
+    ARGO_IDENTITY="${IDENTITY:-$(current_user)}"
+    REMOTE_TARGET="$(prefix_ssh_user "${ARGO_IDENTITY}" "${REMOTE_HOST}")"
+    SSH_JUMP_TARGET=""
+    if [ -n "${ARGO_SSH_JUMP}" ]; then
+        SSH_JUMP_TARGET="$(prefix_jump_chain "${ARGO_IDENTITY}" "${ARGO_SSH_JUMP}")"
+    fi
+
     # SSH ControlMaster settings
     CONTROL_PATH="/tmp/ssh-argo-claude-$$"
 
@@ -68,7 +110,7 @@ run_argo() {
         fi
 
         # Close the SSH tunnel via control socket
-        ssh -O exit -o ControlPath="${CONTROL_PATH}" ${REMOTE_HOST} 2>/dev/null || true
+        ssh -O exit -o ControlPath="${CONTROL_PATH}" ${REMOTE_TARGET} 2>/dev/null || true
 
         echo -e "${GREEN}Done!${NC}"
         exit 0
@@ -90,9 +132,9 @@ run_argo() {
     echo -e "${YELLOW}(You may need to complete MFA authentication)${NC}"
 
     SSH_JUMP_OPTS=()
-    if [ -n "${ARGO_SSH_JUMP}" ]; then
-        SSH_JUMP_OPTS=(-J "${ARGO_SSH_JUMP}")
-        echo -e "${YELLOW}Using SSH jump chain: ${ARGO_SSH_JUMP}${NC}"
+    if [ -n "${SSH_JUMP_TARGET}" ]; then
+        SSH_JUMP_OPTS=(-J "${SSH_JUMP_TARGET}")
+        echo -e "${YELLOW}Using SSH jump chain: ${SSH_JUMP_TARGET}${NC}"
     fi
 
     ssh -f -N \
@@ -100,7 +142,7 @@ run_argo() {
         -o ControlMaster=yes \
         -o ControlPath="${CONTROL_PATH}" \
         -L ${TUNNEL_LOCAL_PORT}:${TUNNEL_REMOTE_HOST}:${TUNNEL_REMOTE_PORT} \
-        ${REMOTE_HOST}
+        ${REMOTE_TARGET}
 
     if [ $? -ne 0 ]; then
         echo -e "${RED}SSH tunnel failed to start. Check your credentials and MFA.${NC}"
@@ -125,8 +167,6 @@ run_argo() {
     echo -e "${GREEN}Local proxy running (port ${PROXY_PORT})!${NC}"
 
     # Step 3: Launch Claude Code
-    # Identity precedence: --identity > $ARGO_USER > $USER
-    ARGO_IDENTITY="${IDENTITY:-${ARGO_USER:-$USER}}"
     # Default to the inline renderer — friendlier over multi-hop SSH (e.g. compute
     # nodes), and preserves Claude's output in scrollback. User can override.
     echo -e "${GREEN}Launching Claude Code as ${ARGO_IDENTITY}...${NC}"
