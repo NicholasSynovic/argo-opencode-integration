@@ -6,4 +6,5 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "aiohttp>=3.13.5",
+    "argo-proxy>=3.0.4",
 ]

@@ -74,7 +74,8 @@ NC='\033[0m' # No Color
 
 run_argo() {
     # Configuration
-    REMOTE_HOST="homes.cels.anl.gov"
+    #REMOTE_HOST="homes.cels.anl.gov"
+    REMOTE_HOST="homes-gce"
     TUNNEL_LOCAL_PORT=8082
     TUNNEL_REMOTE_HOST="apps.inside.anl.gov"
     TUNNEL_REMOTE_PORT=443
