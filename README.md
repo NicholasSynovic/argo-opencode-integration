@@ -3,16 +3,19 @@
 Launch Claude Code against Argonne-hosted backends.
 
 This repo has two pieces:
+
 - `argonne-claude.sh` launches Claude Code with the right backend env vars.
 - `main.py` is the local proxy used by the `argo` backend.
 
 Supported backends:
+
 - `argo`: tunnels to Argonne's internal Argo API through `homes.cels.anl.gov`.
 - `asksage`: talks directly to AskSage's Anthropic-compatible endpoint.
 
 ## Install
 
 Prereqs:
+
 - Python 3.14+
 - `uv`
 - Claude Code
@@ -63,20 +66,27 @@ argonne-claude.sh --backend=argo --identity=jdoe
 argonne-claude.sh --backend=asksage --identity=sk-asksage-...
 ```
 
-For Argo, `--identity` sets the SSH username for the target and jump hosts.
-If omitted, it defaults to your current local username.
+For Argo, `--identity` sets the SSH username for the target and jump hosts. If
+omitted, it defaults to your current local username.
 
 ## Architecture
 
 Argo flow:
-1. SSH tunnels local port `8082` to `apps.inside.anl.gov:443` via `homes.cels.anl.gov`.
+
+1. SSH tunnels local port `8082` to `apps.inside.anl.gov:443` via
+   `homes.cels.anl.gov`.
 2. `main.py` listens on `127.0.0.1:8083` and rewrites requests for the Argo API.
 3. Claude Code talks to `http://127.0.0.1:8083/argoapi/`.
 
 AskSage flow:
-1. The launcher resolves an API key from `--identity`, `ASKSAGE_API_KEY`, or `~/.asksage/token`.
-2. It queries `${ASKSAGE_BASE_URL}/v1/models` and probes adaptive-thinking support unless you override that behavior with `ASKSAGE_MODEL`, `ASKSAGE_SMALL_FAST_MODEL`, or `CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING`.
-3. It sets `NODE_EXTRA_CA_CERTS` to `certs/incommon-rsa-server-ca-2.pem` unless you already exported one.
+
+1. The launcher resolves an API key from `--identity`, `ASKSAGE_API_KEY`, or
+   `~/.asksage/token`.
+2. It queries `${ASKSAGE_BASE_URL}/v1/models` and probes adaptive-thinking
+   support unless you override that behavior with `ASKSAGE_MODEL`,
+   `ASKSAGE_SMALL_FAST_MODEL`, or `CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING`.
+3. It sets `NODE_EXTRA_CA_CERTS` to `certs/incommon-rsa-server-ca-2.pem` unless
+   you already exported one.
 
 ## Aurora notes
 
@@ -87,7 +97,8 @@ Host homes.cels.anl.gov
     ProxyJump logins.cels.anl.gov
 ```
 
-On compute nodes, the launcher adds the extra UAN hop automatically when `$PBS_JOBID` is set.
+On compute nodes, the launcher adds the extra UAN hop automatically when
+`$PBS_JOBID` is set.
 
 ## AskSage token file
 
